@@ -44,7 +44,7 @@ class PriceListRepository extends EntityRepository implements RunpleIdRepository
     public function getPriceList(int $id) : ?PriceListEntity
     {
         return $this->createQueryBuilder('pl')
-            ->leftJoin('pl.priceListGoods', 'plg')
+            ->leftJoin('pl.priceListProducts', 'plg')
             ->where("pl.id = :id")
             ->setParameter('id', $id)
             ->getQuery()

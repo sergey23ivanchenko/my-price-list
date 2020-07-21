@@ -14,8 +14,8 @@ class PriceListModel extends AbstractModel
 {
     const F_TITLE = 'title';
     const F_DESCRIPTION = 'description';
+    const F_PRODUCT_TYPE = 'product_type';
     const F_IMAGE = 'image';
-    const F_GOODS = 'price_list_goods';
 
     /**
      * @var string|null
@@ -28,14 +28,14 @@ class PriceListModel extends AbstractModel
     private $description;
 
     /**
+     * @var string|null
+     */
+    private $productType;
+
+    /**
      * @var object|null
      */
     private $image;
-
-    /**
-     * @var array|null
-     */
-    private $priceListGoods = [];
 
     /**
      * @return string|null
@@ -70,6 +70,22 @@ class PriceListModel extends AbstractModel
     }
 
     /**
+     * @return string|null
+     */
+    public function getProductType(): ?string
+    {
+        return $this->productType;
+    }
+
+    /**
+     * @param string|null $productType
+     */
+    public function setProductType(?string $productType): void
+    {
+        $this->productType = $productType;
+    }
+
+    /**
      * @return object|null
      */
     public function getImage(): ?object
@@ -83,22 +99,5 @@ class PriceListModel extends AbstractModel
     public function setImage(?object $image): void
     {
         $this->image = $image;
-    }
-
-
-    /**
-     * @return array|null
-     */
-    public function getPriceListGoods(): ?array
-    {
-        return $this->priceListGoods;
-    }
-
-    /**
-     * @param array|null $priceListGoods
-     */
-    public function setPriceListGoods(?array $priceListGoods): void
-    {
-        $this->priceListGoods = $priceListGoods;
     }
 }

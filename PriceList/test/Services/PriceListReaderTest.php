@@ -62,12 +62,12 @@ class PriceListReaderTest extends TestHelper
      * @param string $title
      * @param string|null $description
      * @param ImageEntity|null $image
-     * @param Collection|null $priceListGoods
+     * @param Collection|null $priceListProducts
      * @return PriceListEntity
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    private function createPriceList(string $title, string $description = null, ImageEntity $image  = null, Collection $priceListGoods = null)
+    private function createPriceList(string $title, string $description = null, ImageEntity $image  = null, Collection $priceListProducts = null)
     {
         $priceList = new PriceListEntity();
         $priceList->setTitle($title);
@@ -75,7 +75,7 @@ class PriceListReaderTest extends TestHelper
         $priceList->setImage($image);
         $priceList->setStatus(PriceListStatuses::ACTIVE);
         $priceList->setType(PriceListTypes::OPL);
-        $priceList->setPriceListGoods($priceListGoods);
+        $priceList->setPriceListProduct($priceListProducts);
         $this->em->persist($priceList);
         $this->em->flush();
         $this->em->refresh($priceList);

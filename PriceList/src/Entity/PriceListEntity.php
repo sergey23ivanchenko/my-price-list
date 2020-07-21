@@ -4,15 +4,18 @@
 namespace PriceList\Entity;
 
 
+use ArrayAccess;
 use Common\Doctrine\Traits\BlameableEntity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Product\Enum\ProductTypes;
 use Runple\Devtools\Doctrine\Traits\TimestampableEntity;
 use Runple\Modules\File\Entity\ImageEntity;
 use Doctrine\ORM\Mapping as ORM;
 use JMS\Serializer\Annotation\Groups;
 use Runple\Modules\Tools\RIDGenerator\RunpleIdEntityInterface;
 use Runple\Modules\Tools\RIDGenerator\RunpleIdEntityTrait;
+use User\Entity\UserEntity;
 
 /**
  * @ORM\Table(name="price_list_price_lists",
@@ -68,6 +71,14 @@ class PriceListEntity implements RunpleIdEntityInterface
     private $type;
 
     /**
+     * @see ProductTypes
+     * @var string|null
+     * @ORM\Column(name="product_type", type="string", length=255, nullable=true)
+     * @Groups({ "default"})
+     */
+    private $productType;
+
+    /**
      * @var ImageEntity
      * @ORM\ManyToOne(targetEntity="Runple\Modules\File\Entity\ImageEntity", cascade={"persist"})
      * @ORM\JoinColumn(name="image_id", referencedColumnName="id", onDelete="CASCADE")
@@ -76,11 +87,19 @@ class PriceListEntity implements RunpleIdEntityInterface
     private $image;
 
     /**
-     * @var Collection
-     * @ORM\OneToMany(targetEntity="PriceListGoodsEntity", mappedBy="priceList", cascade={"remove"})
+     * @var UserEntity
+     * @ORM\ManyToOne(targetEntity="User\Entity\UserEntity")
+     * @ORM\JoinColumn(name="manager_id", referencedColumnName="id", nullable=true, onDelete="SET NULL")
      * @Groups({"default"})
      */
-    private $priceListGoods;
+    private $manager;
+
+    /**
+     * @var Collection
+     * @ORM\OneToMany(targetEntity="PriceListProductEntity", mappedBy="priceList", cascade={"remove"})
+     * @Groups({"default"})
+     */
+    private $priceListProducts;
 
     /**
      * @var Collection
@@ -94,7 +113,7 @@ class PriceListEntity implements RunpleIdEntityInterface
      */
     public function __construct()
     {
-        $this->priceListGoods = new ArrayCollection();
+        $this->priceListProducts = new ArrayCollection();
         $this->catalogs = new ArrayCollection();
     }
 
@@ -157,17 +176,17 @@ class PriceListEntity implements RunpleIdEntityInterface
     /**
      * @return Collection|null
      */
-    public function getPriceListGoods(): ?Collection
+    public function getPriceListProducts(): ?Collection
     {
-        return $this->priceListGoods;
+        return $this->priceListProducts;
     }
 
     /**
-     * @param Collection|null $priceListGoods
+     * @param Collection|null $priceListProducts
      */
-    public function setPriceListGoods(?Collection $priceListGoods): void
+    public function setPriceListProducts(?Collection $priceListProducts): void
     {
-        $this->priceListGoods = $priceListGoods;
+        $this->priceListProducts = $priceListProducts;
     }
 
     /**
@@ -186,34 +205,34 @@ class PriceListEntity implements RunpleIdEntityInterface
         $this->status = $status;
     }
     /**
-     * @param \ArrayAccess $items
+     * @param ArrayAccess $items
      */
-    public function addPriceListGoods(\ArrayAccess $items)
+    public function addPriceListProducts(ArrayAccess $items)
     {
         foreach ($items as $item) {
-            $this->addPriceListGood($item);
+            $this->addPriceListProduct($item);
         }
     }
 
     /**
-     * @param \ArrayAccess $items
+     * @param ArrayAccess $items
      */
-    public function removePriceListGoods(\ArrayAccess $items)
+    public function removePriceListProducts(ArrayAccess $items)
     {
         foreach ($items as $item) {
-            $this->removePriceListGood($item);
+            $this->removePriceListProduct($item);
         }
     }
 
 
     /**
-     * @param PriceListGoodsEntity $item
+     * @param PriceListProductEntity $item
      * @return bool
      */
-    public function addPriceListGood(PriceListGoodsEntity $item) : bool
+    public function addPriceListProduct(PriceListProductEntity $item) : bool
     {
-        if (! $this->priceListGoods->contains($item)) {
-            $this->priceListGoods->add($item);
+        if (! $this->priceListProducts->contains($item)) {
+            $this->priceListProducts->add($item);
             $item->setPriceList($this);
             return true;
         }
@@ -221,12 +240,12 @@ class PriceListEntity implements RunpleIdEntityInterface
     }
 
     /**
-     * @param PriceListGoodsEntity $item
+     * @param PriceListProductEntity $item
      */
-    public function removePriceListGood(PriceListGoodsEntity $item)
+    public function removePriceListProduct(PriceListProductEntity $item)
     {
-        if ($this->priceListGoods->contains($item)) {
-            $this->priceListGoods->removeElement($item);
+        if ($this->priceListProducts->contains($item)) {
+            $this->priceListProducts->removeElement($item);
         }
     }
 
@@ -260,5 +279,37 @@ class PriceListEntity implements RunpleIdEntityInterface
     public function setCatalogs(Collection $catalog): void
     {
         $this->catalogs = $catalog;
+    }
+
+    /**
+     * @return UserEntity
+     */
+    public function getManager(): UserEntity
+    {
+        return $this->manager;
+    }
+
+    /**
+     * @param UserEntity $manager
+     */
+    public function setManager(UserEntity $manager): void
+    {
+        $this->manager = $manager;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getProductType(): ?string
+    {
+        return $this->productType;
+    }
+
+    /**
+     * @param string|null $productType
+     */
+    public function setProductType(?string $productType): void
+    {
+        $this->productType = $productType;
     }
 }

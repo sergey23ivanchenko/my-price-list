@@ -6,12 +6,15 @@ namespace PriceList\Service;
 
 use Common\Enum\ComparisonExpressions;
 use Common\Exceptions\CommonException;
+use Doctrine\Common\Persistence\Mapping\MappingException;
 use Doctrine\ORM\EntityManager;
 use PriceList\Entity\PriceListEntity;
+use PriceList\Enum\PriceListStatuses;
 use PriceList\Repository\PriceListRepository;
 use Runple\Devtools\Filter\FilterContainer;
 use Runple\Devtools\Filter\Model\FieldConfig;
 use Runple\Devtools\Pagination\Model\PaginationModel;
+use Runple\Devtools\Tool\Arrays\ArrayHelper;
 
 /**
  * Class PriceListReader
@@ -63,7 +66,7 @@ class PriceListReader
      * @param array|null $sorting
      * @return array|null
      * @throws CommonException
-     * @throws \Doctrine\Common\Persistence\Mapping\MappingException
+     * @throws MappingException
      * @throws \ReflectionException
      */
     public function findAll(FilterContainer $filters, PaginationModel $pagination, ?array $sorting): ?array
@@ -110,5 +113,24 @@ class PriceListReader
     {
         $this->configureFiltersContainer($filters);
         return $this->repository->countByFilters($filters);
+    }
+
+    /**
+     * @return array
+     * @throws \Exception
+     */
+    public function countByStatuses(): array
+    {
+        $counts = ArrayHelper::index($counts = $this->repository->countByStatuses(), 'status');
+        $statuses = PriceListStatuses::getList();
+        $result = [];
+        foreach ($statuses as $status) {
+            if (array_key_exists($status, $counts)) {
+                $result[$status] = $counts[$status]["count"];
+            } else {
+                $result[$status] = 0;
+            }
+        }
+        return $result;
     }
 }

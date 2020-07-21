@@ -6,16 +6,22 @@ namespace PriceList\Service;
 
 use Common\Exceptions\CommonException;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\NonUniqueResultException;
+use Doctrine\ORM\OptimisticLockException;
+use Doctrine\ORM\ORMException;
 use File\Model\ImageModel;
 use PriceList\Entity\PriceListEntity;
 use PriceList\Enum\PriceListEvents;
 use PriceList\Enum\PriceListStatuses;
 use PriceList\Enum\PriceListTypes;
 use PriceList\Event\PriceListEvent;
+use PriceList\Model\CreatePriceListModel;
 use PriceList\Model\PriceListModel;
 use PriceList\Repository\PriceListRepository;
+use Product\Enum\ProductTypes;
 use Runple\Modules\File\Entity\ImageEntity;
 use Runple\Modules\File\Repository\ImageRepository;
+use User\Entity\UserEntity;
 
 /**
  * Class PriceListService
@@ -39,7 +45,7 @@ class PriceListService
     protected $imageRepo;
 
     /**
-     * @var PriceListGoodsService
+     * @var PriceListProductsService
      */
     private $service;
 
@@ -53,14 +59,14 @@ class PriceListService
      * @param EntityManager $em
      * @param PriceListRepository $repository
      * @param ImageRepository $imageRepo
-     * @param PriceListGoodsService $service
+     * @param PriceListProductsService $service
      * @param PriceListEventManager $eventManager
      */
     public function __construct(
         EntityManager $em,
         PriceListRepository $repository,
         ImageRepository $imageRepo,
-        PriceListGoodsService $service,
+        PriceListProductsService $service,
         PriceListEventManager $eventManager
 
     )
@@ -74,24 +80,24 @@ class PriceListService
 
     /**
      * @param PriceListModel $model
+     * @param UserEntity $user
      * @return PriceListEntity
      * @throws CommonException
-     * @throws \Doctrine\ORM\NonUniqueResultException
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
-     * @throws \Runple\Devtools\Exception\CommonException
+     * @throws ORMException
+     * @throws OptimisticLockException
+     * @throws \Exception
      */
-    public function createOutgoingPriceList(PriceListModel $model)
+    public function createPriceListByType(PriceListModel $model, UserEntity $user)
     {
-        $priceListGoods = $model->getPriceListGoods();
-        if ($this->repository->getPriceListByTitle($model->getTitle())) {
-            throw new CommonException("Duplicate unique keys Price List Title");
-        }
-        $priceList = $this->fillEntity($model, new PriceListEntity());
+        $priceList = $this->fillEntity($model, new PriceListEntity(), $user);
         $priceList->setStatus(PriceListStatuses::ACTIVE);
         $priceList->setType(PriceListTypes::OPL);
+        if(!in_array($model->getProductType(), ProductTypes::getList())) {
+            throw new CommonException(sprintf("Invalid product type %s ", $model->getProductType()));
+        }
+        $priceList->setProductType($model->getProductType());
         $this->em->persist($priceList);
-        $this->service->putPriceListGoods($priceList, $priceListGoods);
+        $this->service->addProductsByType($priceList, $model->getProductType());
         $this->triggerBeforeCreateEvent($priceList);
         $this->em->flush();
         return $priceList;
@@ -105,27 +111,27 @@ class PriceListService
         $event = new PriceListEvent(PriceListEvents::BEFORE_CREATE_OPL_PRICE_LIST, $this, $priceList);
         $this->eventManager->triggerEvent($event);
     }
+
     /**
      * @param PriceListEntity $priceList
      * @param PriceListModel $model
+     * @param UserEntity $user
      * @return PriceListEntity
      * @throws CommonException
-     * @throws \Doctrine\ORM\NonUniqueResultException
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
+     * @throws NonUniqueResultException
+     * @throws ORMException
+     * @throws OptimisticLockException
      * @throws \Runple\Devtools\Exception\CommonException
      */
-    public function editPriceList(PriceListEntity $priceList, PriceListModel $model)
+    public function editPriceList(PriceListEntity $priceList, PriceListModel $model, UserEntity $user)
     {
         if($priceList->getStatus() !== PriceListStatuses::ACTIVE) {
             throw new \Runple\Devtools\Exception\CommonException('The price list should have only ACTIVE status');
         }
-        $priceListGoods = $model->getPriceListGoods();
         if ($priceList->getTitle() != $model->getTitle() && $this->repository->getPriceListByTitle($model->getTitle())) {
             throw new CommonException("Duplicate unique Price List title");
         }
-        $priceList = $this->fillEntity($model, $priceList);
-        $this->service->putPriceListGoods($priceList, $priceListGoods);
+        $priceList = $this->fillEntity($model, $priceList, $user);
         $this->em->flush();
         return $priceList;
     }
@@ -133,13 +139,19 @@ class PriceListService
     /**
      * @param PriceListModel $model
      * @param PriceListEntity $entity
+     * @param UserEntity $user
      * @return PriceListEntity
      * @throws CommonException
+     * @throws NonUniqueResultException
      */
-    protected function fillEntity(PriceListModel $model, PriceListEntity $entity): PriceListEntity
+    protected function fillEntity(PriceListModel $model, PriceListEntity $entity, UserEntity $user): PriceListEntity
     {
+        if ($this->repository->getPriceListByTitle($model->getTitle())) {
+            throw new CommonException("Duplicate unique keys Price List Title");
+        }
         $entity->setTitle($model->getTitle());
         $entity->setDescription($model->getDescription());
+        $entity->setManager($user);
 
         $image = null;
         if($model->getImage()) {
@@ -161,8 +173,8 @@ class PriceListService
      * @param string $status
      * @return array
      * @throws CommonException
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
+     * @throws ORMException
+     * @throws OptimisticLockException
      */
     public function changePriceListsStatus(array $priceLists, string $status): array
     {
@@ -194,8 +206,8 @@ class PriceListService
      * @param array $priceLists
      * @return bool
      * @throws CommonException
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
+     * @throws ORMException
+     * @throws OptimisticLockException
      */
     public function deletePriceLists(array $priceLists):bool
     {

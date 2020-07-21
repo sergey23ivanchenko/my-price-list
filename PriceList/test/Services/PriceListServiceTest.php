@@ -5,7 +5,6 @@ use PriceList\Enum\PriceListStatuses;
 use PriceList\Enum\PriceListTypes;
 use Runple\Devtools\Exception\CommonException;
 use PriceList\Entity\PriceListEntity;
-use PriceList\Model\PriceListGoodsModel;
 use PriceList\Model\PriceListProductModel;
 use Runple\Modules\Product\Family\Enum\FamilyStatuses;
 use TestHelper\TestHelper;
@@ -13,7 +12,7 @@ use PriceList\Service\PriceListService;
 use PriceList\Model\PriceListModel;
 use File\Model\ImageModel;
 use Runple\Modules\File\Entity\ImageEntity;
-use Product\Entity\GeneralGoodEntity;
+use Product\GeneralProducts\Entity\GeneralProductEntity;
 use Runple\Modules\Product\Family\Entity\ProductFamilyEntity;
 
 /**
@@ -50,14 +49,14 @@ class PriceListServiceTest extends TestHelper
         $priceListProductModel2 = new PriceListProductModel();
         $priceListProductModel2->setId(999999999);
 
-        $priceListGoodsModel1 = new PriceListGoodsModel();
-        $priceListGoodsModel1->setProduct($priceListProductModel1);
-        $priceListGoodsModel1->setPrice(5);
-        $priceListGoodsModel2 = new PriceListGoodsModel();
-        $priceListGoodsModel2->setProduct($priceListProductModel2);
-        $priceListGoodsModel2->setPrice(11);
+        $priceListProductModel1 = new PriceListProductModel();
+        $priceListProductModel1->setProduct($priceListProductModel1);
+        $priceListProductModel1->setPrice(5);
+        $priceListProductModel2 = new PriceListProductModel();
+        $priceListProductModel2->setProduct($priceListProductModel2);
+        $priceListProductModel2->setPrice(11);
 
-        $arrPLGoods = [$priceListGoodsModel1, $priceListGoodsModel2];
+        $arrPLProduct = [$priceListProductModel1, $priceListProductModel2];
         return [
             'create price list only title' =>
                 [
@@ -85,14 +84,14 @@ class PriceListServiceTest extends TestHelper
                     ],
                     true
                 ],
-        'Price List nonexistent general goods' =>
+        'Price List nonexistent general product' =>
                 [
-                    $this->createPriceListModel('Price List', null, null, $arrPLGoods),
+                    $this->createPriceListModel('Price List', null, null, $arrPLProduct),
                     [
                         'title' => 'Price List 1',
                         'description' => null,
                         'image' => null,
-                        'priceListGoods' => $arrPLGoods
+                        'priceListProducts' => $arrPLProduct
                     ],
                     true
                 ]
@@ -164,12 +163,12 @@ class PriceListServiceTest extends TestHelper
      * @throws \Doctrine\ORM\OptimisticLockException
      * @throws \Runple\Devtools\Exception\CommonException
      */
-    public function testCreatePriceListGoods()
+    public function testCreatePriceListProduct()
     {
-        $title = 'Price list with a goods';
-        $description = 'Price list with a goods';
-        $priceListGoodsModel = $this->createPriceListGoods();
-        $priceListModel = $this->createPriceListModel($title, $description, null, $priceListGoodsModel);
+        $title = 'Price list with a product';
+        $description = 'Price list with a product';
+        $priceListProductModel = $this->createPriceListProduct();
+        $priceListModel = $this->createPriceListModel($title, $description, null, $priceListProductModel);
         $priceList = $this->priceListService->createOutgoingPriceList($priceListModel);
         $this->assertInstanceOf(PriceListEntity::class, $priceList);
         $this->assertSame($title, $priceList->getTitle());
@@ -188,8 +187,8 @@ class PriceListServiceTest extends TestHelper
         $title = 'Price list All fields';
         $description = 'Price list fields';
         $image = $this->createPriceListImageModel();
-        $priceListGoodsModel = $this->createPriceListGoods();
-        $priceListModel = $this->createPriceListModel($title, $description, $image, $priceListGoodsModel);
+        $priceListProductModel = $this->createPriceListProduct();
+        $priceListModel = $this->createPriceListModel($title, $description, $image, $priceListProductModel);
         $priceList = $this->priceListService->createOutgoingPriceList($priceListModel);
         $this->assertInstanceOf(PriceListEntity::class, $priceList);
         $this->assertSame($title, $priceList->getTitle());
@@ -199,18 +198,18 @@ class PriceListServiceTest extends TestHelper
      * @param string $title
      * @param string|null $description
      * @param ImageModel|null $image
-     * @param PriceListGoodsModel[] $priceListGoods
+     * @param PriceListProductModel[] $priceListProducts
      * @return PriceListModel
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    private function createPriceListModel(?string $title, string $description = null, ImageModel $image = null, array $priceListGoods = [])
+    private function createPriceListModel(?string $title, string $description = null, ImageModel $image = null, array $priceListProducts = [])
     {
         $priceListModel = new PriceListModel();
         $priceListModel->setTitle($title);
         $priceListModel->setDescription($description);
         $priceListModel->setImage($image);
-        $priceListModel->setPriceListGoods($priceListGoods);
+        $priceListModel->setPriceListProduct($priceListProducts);
         return $priceListModel;
     }
 
@@ -244,76 +243,76 @@ class PriceListServiceTest extends TestHelper
         return $imageEntity;
     }
     /**
-     * @return PriceListGoodsModel[]
+     * @return PriceListProductModel[]
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    private function createPriceListGoods()
+    private function createPriceListProduct()
     {
-        $arrGGoods = $this->createGeneralGoods();
+        $arrGProduct = $this->createGeneralProduct();
 
         $priceListProductModel1 = new PriceListProductModel();
-        $priceListProductModel1->setId($arrGGoods[0]->getId());
+        $priceListProductModel1->setId($arrGProduct[0]->getId());
 
         $priceListProductModel2 = new PriceListProductModel();
-        $priceListProductModel2->setId($arrGGoods[1]->getId());
+        $priceListProductModel2->setId($arrGProduct[1]->getId());
 
-        $priceListGoodsModel1 = new PriceListGoodsModel();
-        $priceListGoodsModel1->setProduct($priceListProductModel1);
-        $priceListGoodsModel1->setPrice(5);
-        $priceListGoodsModel2 = new PriceListGoodsModel();
-        $priceListGoodsModel2->setProduct($priceListProductModel2);
-        $priceListGoodsModel2->setPrice(11);
+        $priceListProductModel1 = new PriceListProductModel();
+        $priceListProductModel1->setProduct($priceListProductModel1);
+        $priceListProductModel1->setPrice(5);
+        $priceListProductModel2 = new PriceListProductModel();
+        $priceListProductModel2->setProduct($priceListProductModel2);
+        $priceListProductModel2->setPrice(11);
 
-        return $priceListGoods = [$priceListGoodsModel1, $priceListGoodsModel2];
+        return $priceListProducts = [$priceListProductModel1, $priceListProductModel2];
     }
 
     /**
-     * @return GeneralGoodEntity[]
+     * @return GeneralProductEntity[]
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    private function createGeneralGoods()
-    {
-        $family1 = new ProductFamilyEntity();
-        $family1->setTitle('Family 1');
-        $family1->setStatus(FamilyStatuses::STATUS_ACTIVE);
-        $this->em->persist($family1);
-        $this->em->flush();
-        $this->em->refresh($family1);
-
-        $family2 = new ProductFamilyEntity();
-        $family2->setTitle('Family 2');
-        $family2->setStatus(FamilyStatuses::STATUS_ACTIVE);
-        $this->em->persist($family2);
-        $this->em->flush();
-        $this->em->refresh($family2);
-
-        $gGoods1 = new GeneralGoodEntity();
-        $gGoods1->setFamily($family1);
-        $this->em->persist($gGoods1);
-        $this->em->flush();
-        $this->em->refresh($gGoods1);
-
-        $gGoods2 = new GeneralGoodEntity();
-        $gGoods2->setFamily($family2);
-        $this->em->persist($gGoods2);
-        $this->em->flush();
-        $this->em->refresh($gGoods2);
-
-        return $arrGGoods = [$gGoods1, $gGoods2];
-    }
+//    private function createGeneralProduct()
+//    {
+//        $family1 = new ProductFamilyEntity();
+//        $family1->setTitle('Family 1');
+//        $family1->setStatus(FamilyStatuses::STATUS_ACTIVE);
+//        $this->em->persist($family1);
+//        $this->em->flush();
+//        $this->em->refresh($family1);
+//
+//        $family2 = new ProductFamilyEntity();
+//        $family2->setTitle('Family 2');
+//        $family2->setStatus(FamilyStatuses::STATUS_ACTIVE);
+//        $this->em->persist($family2);
+//        $this->em->flush();
+//        $this->em->refresh($family2);
+//
+//        $gProduct1 = new GeneralProductEntity();
+//        $gProduct1->setFamily($family1);
+//        $this->em->persist($gProduct1);
+//        $this->em->flush();
+//        $this->em->refresh($gProduct1);
+//
+//        $gProduct2 = new GeneralProductEntity();
+//        $gProduct2->setFamily($family2);
+//        $this->em->persist($gProduct2);
+//        $this->em->flush();
+//        $this->em->refresh($gProduct2);
+//
+//        return $arrGProduct = [$gProduct1, $gProduct2];
+//    }
 
     /**
      * @param string $title
      * @param string|null $description
      * @param ImageEntity|null $image
-     * @param Collection|null $priceListGoods
+     * @param Collection|null $priceListProducts
      * @return PriceListEntity
      * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      */
-    private function createPriceList(string $title, string $description = null, ImageEntity $image  = null, Collection $priceListGoods = null)
+    private function createPriceList(string $title, string $description = null, ImageEntity $image  = null, Collection $priceListProducts = null)
     {
         $priceList = new PriceListEntity();
         $priceList->setTitle($title);
@@ -321,7 +320,7 @@ class PriceListServiceTest extends TestHelper
         $priceList->setImage($image);
         $priceList->setStatus(PriceListStatuses::ACTIVE);
         $priceList->setType(PriceListTypes::OPL);
-        $priceList->setPriceListGoods($priceListGoods);
+        $priceList->setPriceListProduct($priceListProducts);
         $this->em->persist($priceList);
         $this->em->flush();
         $this->em->refresh($priceList);

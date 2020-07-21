@@ -6,9 +6,10 @@ namespace PriceList\Factory\Controller;
 
 use Interop\Container\ContainerInterface;
 use PriceList\Controller\Api\PriceListController;
-use PriceList\Form\PriceListForm;
+use PriceList\Form\EditPriceListForm;
 use PriceList\Service\PriceListReader;
 use PriceList\Service\PriceListService;
+use PriceList\Service\PriceListViewTransformer;
 use Runple\Devtools\Pagination\Form\PaginationForm;
 use Zend\ServiceManager\Factory\FactoryInterface;
 
@@ -18,6 +19,12 @@ use Zend\ServiceManager\Factory\FactoryInterface;
  */
 class PriceListControllerFactory implements FactoryInterface
 {
+    /**
+     * @param ContainerInterface $container
+     * @param string $requestedName
+     * @param array|null $options
+     * @return object|PriceListController
+     */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         $elementManager = $container->get('FormElementManager');
@@ -28,11 +35,6 @@ class PriceListControllerFactory implements FactoryInterface
         $paginator = $elementManager->get(PaginationForm::class);
 
         /**
-         * @var $form PriceListForm
-         */
-        $form = $elementManager->get(PriceListForm::class);
-
-        /**
          * @var $service PriceListService
          */
         $service = $container->get(PriceListService::class);
@@ -41,6 +43,12 @@ class PriceListControllerFactory implements FactoryInterface
          * @var $reader PriceListReader
          */
         $reader = $container->get(PriceListReader::class);
-        return new PriceListController($paginator, $form, $service, $reader);
+
+        /**
+         * @var $transformer PriceListViewTransformer
+         */
+        $transformer = $container->get(PriceListViewTransformer::class);
+
+        return new PriceListController($paginator, $service, $reader, $transformer);
     }
 }

@@ -7,7 +7,7 @@ use Interop\Container\ContainerInterface;
 use PriceList\Entity\PriceListEntity;
 use PriceList\Repository\PriceListRepository;
 use PriceList\Service\PriceListEventManager;
-use PriceList\Service\PriceListGoodsService;
+use PriceList\Service\PriceListProductsService;
 use PriceList\Service\PriceListService;
 use Runple\Modules\File\Entity\ImageEntity;
 use Runple\Modules\File\Repository\ImageRepository;
@@ -35,9 +35,9 @@ class PriceListServiceFactory implements FactoryInterface
         $imgRepo = $em->getRepository(ImageEntity::class);
 
         /**
-         * @var $service PriceListGoodsService
+         * @var $service PriceListProductsService
          */
-        $service = $container->get(PriceListGoodsService::class);
+        $service = $container->get(PriceListProductsService::class);
 
         /**
          * @var $eventManager PriceListEventManager

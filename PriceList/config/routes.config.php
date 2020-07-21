@@ -4,6 +4,7 @@ namespace PriceList;
 
 use PriceList\Controller\Api\AssignmentController;
 use PriceList\Controller\Api\PriceListController;
+use PriceList\Controller\Api\PriceListProductsController;
 use PriceList\Controller\Api\TransferController;
 use Runple\Devtools\Zend\Router\RouteBuilder;
 use Zend\Http\Request;
@@ -46,6 +47,20 @@ $routes = [
                 ],
             ],
         ],
+        'update_price_list_products' => [
+            'type' => Segment::class,
+            'options' => [
+                'route' => '/price-lists/:price_list_id/products/:id',
+                'defaults' => [
+                    'controller' => PriceListProductsController::class,
+                    'action' => 'updatePriceListProduct',
+                ],
+                'constraints' => [
+                    'price_list_id' => '\d+',
+                    'id' => '\d+',
+                ],
+            ],
+        ],
     ],
     Request::METHOD_GET => [
         'get_price_list' => [
@@ -68,6 +83,30 @@ $routes = [
                 'defaults' => [
                     'controller' => PriceListController::class,
                     'action' => 'allPriceLists',
+                ],
+            ],
+        ],
+        'get_price_list_products_list' => [
+            'type' => Segment::class,
+            'options' => [
+                'route' => '/price-lists/:id/products/family/:family_id',
+                'defaults' => [
+                    'controller' => PriceListProductsController::class,
+                    'action' => 'getProductsList',
+                ],
+                'constraints' => [
+                    'id' => '\d+',
+                    'family_id' => '\d+',
+                ],
+            ],
+        ],
+        'get_counters' => [
+            'type' => Segment::class,
+            'options' => [
+                'route' => '/price-lists/counters',
+                'defaults' => [
+                    'controller' => PriceListController::class,
+                    'action' => 'getCounters',
                 ],
             ],
         ],

@@ -8,7 +8,7 @@ use Zend\ServiceManager\Factory\InvokableFactory;
 
 return [
     ConfigKeys::EVENT_MANAGER => [
-        'product' => [
+        'price_list' => [
             ConfigKeys::MANAGER => PriceListEventManager::class,
             ConfigKeys::LISTENERS => [
                 PriceListListener::class,

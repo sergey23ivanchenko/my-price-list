@@ -41,8 +41,7 @@ class PriceListListener extends AbstractListenerAggregate
 
     /**
      * @param PriceListEvent $event
-     * @throws \Doctrine\Common\Persistence\Mapping\MappingException
-     * @throws \ReflectionException
+     * @throws \Exception
      */
     public function onBeforeCreateOPLPriceList(PriceListEvent $event)
     {

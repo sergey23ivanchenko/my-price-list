@@ -5,12 +5,16 @@ namespace PriceList\Controller\Api;
 
 
 use Common\Api\Controller\AbstractApiController;
+use Doctrine\ORM\NonUniqueResultException;
+use Doctrine\ORM\OptimisticLockException;
+use Doctrine\ORM\ORMException;
 use PriceList\Entity\PriceListEntity;
-use PriceList\Enum\PriceListStatuses;
-use PriceList\Form\PriceListForm;
+use PriceList\Form\CreatePriceListForm;
+use PriceList\Form\EditPriceListForm;
 use PriceList\Model\PriceListModel;
 use PriceList\Service\PriceListReader;
 use PriceList\Service\PriceListService;
+use PriceList\Service\PriceListViewTransformer;
 use Runple\Devtools\Exception\CommonException;
 use Runple\Devtools\Filter\FilterContainer;
 use Runple\Devtools\Pagination\Form\PaginationForm;
@@ -23,15 +27,13 @@ use Zend\Http\Response;
  */
 class PriceListController extends AbstractApiController
 {
+    const PRICE_LIST_DETAILS = 'price_list_details';
+    const PRICE_LIST_PRODUCT_DETAILS = 'price_list_product_details';
+
     /**
      * @var PaginationForm
      */
     private $paginator;
-
-    /**
-     * @var PriceListForm
-     */
-    private $form;
 
     /**
      * @var PriceListService
@@ -44,23 +46,28 @@ class PriceListController extends AbstractApiController
     private $reader;
 
     /**
+     * @var PriceListViewTransformer
+     */
+    private $transformer;
+
+    /**
      * PriceListController constructor.
      * @param PaginationForm $paginator
-     * @param PriceListForm $form
      * @param PriceListService $service
      * @param PriceListReader $reader
+     * @param PriceListViewTransformer $transformer
      */
     public function __construct(
         PaginationForm $paginator,
-        PriceListForm $form,
         PriceListService $service,
-        PriceListReader $reader
+        PriceListReader $reader,
+        PriceListViewTransformer $transformer
     )
     {
         $this->paginator = $paginator;
-        $this->form = $form;
         $this->service = $service;
         $this->reader = $reader;
+        $this->transformer = $transformer;
     }
 
     /**
@@ -130,7 +137,7 @@ class PriceListController extends AbstractApiController
      * @return Response
      * @throws \Common\Exceptions\CommonException
      * @throws \Doctrine\Common\Persistence\Mapping\MappingException
-     * @throws \Doctrine\ORM\NonUniqueResultException
+     * @throws NonUniqueResultException
      * @throws \ReflectionException
      */
     public function allPriceListsAction()
@@ -150,10 +157,51 @@ class PriceListController extends AbstractApiController
         /** @var $pageModel PaginationModel */
         $pageModel = $this->paginator->getData();
 
-        $data = $this->reader->findAll($filters, $pageModel, $sorting);
+        $priceLists = $this->reader->findAll($filters, $pageModel, $sorting);
+        $data = $this->transformer->transformPriceListsToViewModel($priceLists);
         $count = $this->reader->countAll($filters);
         $pageModel->setCount($count);
-        return $this->prepareSuccessPaginatedResponse($response, $data, $pageModel);
+        return $this->prepareSuccessPaginatedResponse($response, $data, $pageModel, [self::PRICE_LIST_DETAILS, 'default']);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/v1/price-lists/counters",
+     *     tags={"priceList"},
+     *     security={
+     *       {"api_key": {}}
+     *     },
+     *     summary="Counters price list",
+     *     @OA\Response(
+     *         response=200,
+     *         @OA\JsonContent(
+     *              type="object",
+     *              @OA\Property(
+     *                  property="data",
+     *                  title="Data container",
+     *                  type="object",
+     *                  @OA\Property(property="inactive", title="count of status", example="16"),
+     *                  @OA\Property(property="deleted", title="count of status", example="1"),
+     *                  @OA\Property(property="active", title="count of status", example="1"),
+     *              ),
+     *          ),
+     *         description="OK"
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized"
+     *     )
+     * )
+     */
+    /**
+     * @return Response
+     * @throws \Exception
+     */
+    public function getCountersAction()
+    {
+        $response = $this->getResponse();
+        $counters = $this->reader->countByStatuses();
+        return $this->prepareSuccessResponse($response, $counters);
     }
 
     /**
@@ -195,7 +243,7 @@ class PriceListController extends AbstractApiController
      */
     /**
      * @return Response
-     * @throws \Doctrine\ORM\NonUniqueResultException
+     * @throws NonUniqueResultException
      */
     public function getPriceListAction()
     {
@@ -205,7 +253,8 @@ class PriceListController extends AbstractApiController
         if (!$priceList instanceof PriceListEntity) {
             return $this->prepareErrorResponse($response, 'Price List not found', null, Response::STATUS_CODE_404);
         }
-        return $this->prepareSuccessResponse($response, $priceList);
+        $data = $this->transformer->transformPriceList($priceList);
+        return $this->prepareSuccessResponse($response, $data, [self::PRICE_LIST_DETAILS, self::PRICE_LIST_PRODUCT_DETAILS, 'default']);
     }
 
     /**
@@ -249,17 +298,19 @@ class PriceListController extends AbstractApiController
      */
     /**
      * @return Response
+     * @throws ORMException
+     * @throws OptimisticLockException
      * @throws \Common\Exceptions\CommonException
-     * @throws \Doctrine\ORM\NonUniqueResultException
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
-     * @throws \Runple\Devtools\Exception\CommonException
+     * @throws \Exception
      */
     public function createPriceListAction ()
     {
         $response = $this->getResponse();
         $data = $this->getRequestBody();
-        $form = $this->form;
+        /**
+         * @var $form CreatePriceListForm
+         */
+        $form = $this->formPlugin()->getForm(CreatePriceListForm::class);
         $form->setData($data);
         if(!$form->isValid()) {
             $msg = 'Validation error';
@@ -268,8 +319,10 @@ class PriceListController extends AbstractApiController
         }
         /** @var $model PriceListModel */
         $model = $form->getData();
-        $priceList = $this->service->createOutgoingPriceList($model);
-        return $this->prepareSuccessResponse($response, $priceList);
+        $user = $this->getCurrentUser();
+        $priceList = $this->service->createPriceListByType($model, $user);
+        $responseModel = $this->transformer->transformPriceList($priceList);
+        return $this->prepareSuccessResponse($response, $responseModel, [self::PRICE_LIST_DETAILS, self::PRICE_LIST_PRODUCT_DETAILS, 'default']);
     }
 
     /**
@@ -293,7 +346,7 @@ class PriceListController extends AbstractApiController
      *        request="GeneralGood",
      *        description="General good model for storing",
      *        required=true,
-     *        @OA\JsonContent(ref="#/components/schemas/PriceList-Create")
+     *        @OA\JsonContent(ref="#/components/schemas/PriceList-Update")
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -305,7 +358,7 @@ class PriceListController extends AbstractApiController
      *                  property="data",
      *                  title="Data container",
      *                  type="array",
-     *                  @OA\Items(ref="#/components/schemas/Catalog")
+     *                  @OA\Items(ref="#/components/schemas/Price-list")
      *              )
      *          ),
      *     ),
@@ -323,10 +376,11 @@ class PriceListController extends AbstractApiController
     /**
      * @return Response
      * @throws \Common\Exceptions\CommonException
-     * @throws \Doctrine\ORM\NonUniqueResultException
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
-     * @throws \Runple\Devtools\Exception\CommonException
+     * @throws NonUniqueResultException
+     * @throws ORMException
+     * @throws OptimisticLockException
+     * @throws CommonException
+     * @throws \Exception
      */
     public function editPriceListAction()
     {
@@ -337,7 +391,7 @@ class PriceListController extends AbstractApiController
         if (!$entity instanceof PriceListEntity) {
             return $this->prepareErrorResponse($response, 'Price List not found', null, Response::STATUS_CODE_404 );
         }
-        $form = $this->form;
+        $form = $this->formPlugin()->getForm(EditPriceListForm::class);
         $form->setData($data);
         if(!$form->isValid()) {
             $msg = 'Validation error';
@@ -346,8 +400,10 @@ class PriceListController extends AbstractApiController
         }
         /** @var $model PriceListModel */
         $model = $form->getData();
-        $priceList = $this->service->editPriceList($entity, $model);
-        return $this->prepareSuccessResponse($response, $priceList);
+        $user = $this->getCurrentUser();
+        $priceList = $this->service->editPriceList($entity, $model, $user);
+        $responseModel = $this->transformer->transformPriceList($priceList);
+        return $this->prepareSuccessResponse($response, $responseModel, [self::PRICE_LIST_DETAILS, self::PRICE_LIST_PRODUCT_DETAILS, 'default']);
     }
     /**
      * @OA\Patch(
@@ -386,8 +442,8 @@ class PriceListController extends AbstractApiController
     /**
      * @return Response
      * @throws \Common\Exceptions\CommonException
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
+     * @throws ORMException
+     * @throws OptimisticLockException
      */
     public function changeStatusAction()
     {
@@ -453,8 +509,8 @@ class PriceListController extends AbstractApiController
     /**
      * @return Response
      * @throws \Common\Exceptions\CommonException
-     * @throws \Doctrine\ORM\ORMException
-     * @throws \Doctrine\ORM\OptimisticLockException
+     * @throws ORMException
+     * @throws OptimisticLockException
      */
     public function deletePriceListsAction()
     {

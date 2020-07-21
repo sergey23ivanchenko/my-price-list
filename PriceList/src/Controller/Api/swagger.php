@@ -11,7 +11,7 @@
  *              type="integer",
  *              example="15"
  *          )),
- *     @OA\Property(property="status", title="Status of catalog", example="published"),
+ *     @OA\Property(property="status", title="Status of catalog", example="inactive"),
  * )
  */
 /**
@@ -24,19 +24,8 @@
  *     @OA\Property(property="title", title="Title of Price List", example="Price List 1"),
  *     @OA\Property(property="description", title="Description of Price List", example="Description 1"),
  *     @OA\Property(property="status", title="Status of Price List", example="inactive"),
- *     @OA\Property(property="image", type="object", title="Image objects", @OA\Property(property="id", title="Id of image", example="2", format="int32", type="integer")),
- *     @OA\Property(
- *          property="price_list_goods",
- *          title="Price List Goods",
- *          type="object",
- *          ref="#/components/schemas/Catalog-Goods"
- *     ),
- *     @OA\Property(
- *          property="price_list_catalogs",
- *          title="Price List assign catalog",
- *          type="object",
- *          ref="#/components/schemas/Catalog"
- *     ),
+ *     @OA\Property(property="manager", title="Manager", type="object", ref="#/components/schemas/Users-UserRO"),
+ *     @OA\Property(property="image", title="Image", type="object", ref="#/components/schemas/File-Image"),
  * )
  */
 /**
@@ -45,22 +34,57 @@
  *     type="object",
  *     title="Price List",
  *     schema="PriceList-Create",
+ *     @OA\Property(property="product_type", title="Product type", example="goods"),
  *     @OA\Property(property="title", title="Title of price list", example="Price List 1"),
  *     @OA\Property(property="description", title="Description of price list", example="Description 1"),
  *     @OA\Property(property="image", type="object", title="Image objects", @OA\Property(property="id", title="Id of image", example="2", format="int32", type="integer")),
- *     @OA\Property(property="price_list_goods",
- *          title="Catalog goods array",
- *          type="array",
- *          @OA\Items(ref="#/components/schemas/Add-PriceLists-goods"),
- *      ),
  * )
  */
 /**
  * @OA\Schema(
- *     description="Add price list goods",
+ *     description="Price List - model for update price list",
  *     type="object",
- *     title="Add price list goods",
- *     schema="Add-PriceLists-goods",
+ *     title="Price List",
+ *     schema="PriceList-Update",
+ *     @OA\Property(property="title", title="Title of price list", example="Price List 1"),
+ *     @OA\Property(property="description", title="Description of price list", example="Description 1"),
+ *     @OA\Property(property="image", type="object", title="Image objects", @OA\Property(property="id", title="Id of image", example="2", format="int32", type="integer")),
+ * )
+ */
+/**
+ * @OA\Schema(
+ *     description="Update Price list product",
+ *     type="object",
+ *     title="Price List Product",
+ *     schema="Update-PriceList-Product",
+ *     @OA\Property(property="net_price", title="Net price", example=10),
+ *     @OA\Property(property="gross_price", title="Gross price", example=11),
+ *     @OA\Property(property="vat", type="object", title="VAT", example=20),
+ * )
+ */
+/**
+ * @OA\Schema(
+ *     description="View Price list product",
+ *     type="object",
+ *     title="Price List Product",
+ *     schema="View-PriceList-Product",
+ *     @OA\Property(property="id", title="NId of price list product", example=1),
+ *     @OA\Property(property="product_id", title="NId of price list product", example=1),
+ *     @OA\Property(property="runple_id", title="NId of price list product", example="GDS-191209-013"),
+ *     @OA\Property(property="name", title="NId of price list product", example="Apple iPhone X"),
+ *     @OA\Property(property="net_price", title="Net price", example=10),
+ *     @OA\Property(property="gross_price", title="Gross price", example=11),
+ *     @OA\Property(property="vat", type="object", title="VAT", example=20),
+ *     @OA\Property(property="remark", type="object", title="Remark", example="Remark here"),
+ *     @OA\Property(property="category", type="object", title="Category", example="Video Game Console"),
+ * )
+ */
+/**
+ * @OA\Schema(
+ *     description="Add price list product",
+ *     type="object",
+ *     title="Add price list product",
+ *     schema="Add-PriceLists-product",
  *     @OA\Property(
  *          property="product",
  *          title="Price List product",

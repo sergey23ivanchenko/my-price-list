@@ -2,28 +2,21 @@
 
 namespace PriceList;
 
-use PriceList\Factory\Form\PriceListFormFactory;
 use PriceList\Form\PriceListAssignFieldset;
-use PriceList\Form\PriceListForm;
-use PriceList\Form\PriceListGoodsFieldset;
+use PriceList\Form\EditPriceListForm;
+use PriceList\Form\PriceListProductsFieldset;
 use PriceList\Form\PriceListImageFieldset;
-use PriceList\Form\PriceListProductFieldset;
-use PriceList\InputFilter\CreatePriceListInputFilter;
+use PriceList\Form\PriceListProductForm;
 use Zend\ServiceManager\Factory\InvokableFactory;
 
 return [
     'form_elements' => [
         'factories' => [
-            PriceListForm::class => PriceListFormFactory::class,
-            PriceListGoodsFieldset::class => InvokableFactory::class,
+            EditPriceListForm::class => InvokableFactory::class,
+            PriceListProductsFieldset::class => InvokableFactory::class,
             PriceListImageFieldset::class => InvokableFactory::class,
             PriceListAssignFieldset::class => InvokableFactory::class,
-            PriceListProductFieldset::class => InvokableFactory::class,
+            PriceListProductForm::class => InvokableFactory::class,
         ],
-    ],
-    'input_filters' => [
-        'factories' => [
-            CreatePriceListInputFilter::class => InvokableFactory::class,
-        ]
     ]
 ];
